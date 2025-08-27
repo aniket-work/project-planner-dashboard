@@ -1,0 +1,125 @@
+{
+  "Level1Groups": [
+    {
+      "name": "GroupA",
+      "subsystems": [
+        {
+          "name": "SubsystemX",
+          "pipelines": {
+            "streaming": {
+              "finalized": 10,
+              "uat": 5,
+              "planned": 3,
+              "production": 2
+            },
+            "batch": {
+              "finalized": 20,
+              "uat": 7,
+              "planned": 4,
+              "production": 9
+            }
+          },
+          "contacts": {
+            "producerTech": [
+              "Alice",
+              "Bob"
+            ],
+            "producerBusiness": [
+              "Eve"
+            ],
+            "ourTech": [
+              "Charlie"
+            ],
+            "ourBusiness": [
+              "Diana"
+            ]
+          },
+          "issues": [
+            {
+              "id": "ISS-101",
+              "description": "Data delay from source",
+              "status": "Open"
+            },
+            {
+              "id": "ISS-102",
+              "description": "Schema mismatch on v2",
+              "status": "In Progress"
+            }
+          ]
+        },
+        {
+          "name": "SubsystemY",
+          "pipelines": {
+            "streaming": {
+              "finalized": 5,
+              "uat": 2,
+              "planned": 1,
+              "production": 1
+            },
+            "batch": {
+              "finalized": 8,
+              "uat": 3,
+              "planned": 2,
+              "production": 2
+            }
+          },
+          "contacts": {
+            "producerTech": [
+              "Frank"
+            ],
+            "producerBusiness": [
+              "Grace"
+            ],
+            "ourTech": [
+              "Hank"
+            ],
+            "ourBusiness": [
+              "Ivy"
+            ]
+          },
+          "issues": []
+        },
+        {
+          "name": "SubsystemZ",
+          "pipelines": {
+            "streaming": {
+              "finalized": 2,
+              "uat": 1,
+              "planned": 6,
+              "production": 0
+            },
+            "batch": {
+              "finalized": 3,
+              "uat": 4,
+              "planned": 5,
+              "production": 1
+            }
+          },
+          "contacts": {
+            "producerTech": [
+              "Jai",
+              "Kim"
+            ],
+            "producerBusiness": [
+              "Lena"
+            ],
+            "ourTech": [
+              "Mo",
+              "Nia"
+            ],
+            "ourBusiness": [
+              "Omar"
+            ]
+          },
+          "issues": [
+            {
+              "id": "ISS-201",
+              "description": "Access to UAT blocked",
+              "status": "Open"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
