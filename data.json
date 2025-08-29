@@ -7,7 +7,7 @@
           "name": "SubsystemX",
           "pipelines": {
             "streaming": {
-              "finalized": 10,
+              "finalized": 12,
               "uat": 5,
               "planned": 3,
               "production": 2
@@ -55,7 +55,7 @@
           "name": "SubsystemY",
           "pipelines": {
             "streaming": {
-              "finalized": 6,
+              "finalized": 8,
               "uat": 2,
               "planned": 1,
               "production": 1

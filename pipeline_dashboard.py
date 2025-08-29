@@ -200,6 +200,10 @@ with col2:
 if 'data_modified' not in st.session_state:
     st.session_state.data_modified = False
 
+# Sidebar navigation
+st.sidebar.title("Navigation")
+tab_selection = st.sidebar.radio("Select Tab", ["📊 Dashboard", "⚙️ Admin"])
+
 # Sidebar filters populated from data
 groups = df["Group"].dropna().unique()
 selected_group = st.sidebar.selectbox("Select Level-1 Group", groups)
@@ -212,112 +216,45 @@ if sub_df.empty:
     st.warning("No pipeline records found. Please check your data source.")
     st.stop()
 
-# Summary Metrics
-col1, col2, col3, col4 = st.columns(4)
-col1.metric("Finalized", int(sub_df[sub_df["StageKey"] == "finalized"]["Count"].sum()))
-col2.metric("UAT", int(sub_df[sub_df["StageKey"] == "uat"]["Count"].sum()))
-col3.metric("Planned", int(sub_df[sub_df["StageKey"] == "planned"]["Count"].sum()))
-col4.metric("Production", int(sub_df[sub_df["StageKey"] == "production"]["Count"].sum()))
-
-# Editable UI
-node = get_subsystem_node(data, selected_group, selected_subsystem)
-if node:
-    st.header(f"Edit {selected_subsystem} Details")
-
-    st.subheader("Pipeline Counts")
-    for ptype in node.get("pipelines", {}):
-        st.markdown(f"**{ptype.title()} Pipelines:**")
-        cols = st.columns(len(STAGE_DISPLAY))
-        for idx, stag in enumerate(STAGE_DISPLAY):
-            val = node["pipelines"][ptype].get(stag, 0)
-            new_val = cols[idx].number_input(
-                f"{ptype.title()} - {STAGE_DISPLAY[stag]}", min_value=0, max_value=1000,
-                step=1, value=val, key=f"{selected_subsystem}-{ptype}-{stag}",
-                on_change=mark_data_modified
-            )
-            if new_val != val:
-                node["pipelines"][ptype][stag] = new_val
-                mark_data_modified()
-
-    st.subheader("Contacts")
-    all_people = ["Alice", "Bob", "Charlie", "Diana", "Eve", "Frank", "Grace", "Hank", "Ivy", "Jai", "Kim", "Lena", "Mo", "Nia", "Omar"]
-    for ctype, label in [
-        ("producerTech", "Producer Tech"),
-        ("producerBusiness", "Producer Business"),
-        ("ourTech", "Our Tech"),
-        ("ourBusiness", "Our Business/PMO"),
-    ]:
-        new_contacts = st.multiselect(
-            label, all_people, default=node["contacts"].get(ctype, []), key=f"{selected_subsystem}-{ctype}",
-            on_change=mark_data_modified
-        )
-        if new_contacts != node["contacts"].get(ctype, []):
-            node["contacts"][ctype] = new_contacts
-            mark_data_modified()
-
-    st.subheader("Issues / Obstacles (Editable)")
-    issues = node.get("issues", [])
-    edited_issues = []
-    for i, issue in enumerate(issues):
-        exp = st.expander(f"Issue {i+1}: [{issue['id']}]")
-        with exp:
-            new_desc = st.text_input(f"Description", issue["description"], key=f"{selected_subsystem}-desc{i}", on_change=mark_data_modified)
-            new_status = st.selectbox("Status", ["Open", "In Progress", "Closed"], index=["Open", "In Progress", "Closed"].index(issue["status"]), key=f"{selected_subsystem}-status{i}", on_change=mark_data_modified)
-            
-            # Date fields
-            col1, col2 = st.columns(2)
-            with col1:
-                start_date = st.date_input(
-                    "Start Date",
-                    value=datetime.strptime(issue.get("start_date", get_today_string()), "%Y-%m-%d").date() if issue.get("start_date") else date.today(),
-                    key=f"{selected_subsystem}-start{i}"
-                )
-            with col2:
-                close_date = st.date_input(
-                    "Close Date",
-                    value=datetime.strptime(issue.get("close_date", get_today_string()), "%Y-%m-%d").date() if issue.get("close_date") else None,
-                    key=f"{selected_subsystem}-close{i}"
-                )
-            
-            # Auto-close date when status is "Closed"
-            if new_status == "Closed" and not close_date:
-                close_date = date.today()
-            
-            # Validate date range
-            if not validate_date_range(start_date, close_date):
-                st.error("⚠️ Close date cannot be before start date!")
-                continue
-            
-            edited_issues.append({
-                "id": issue["id"], 
-                "description": new_desc, 
-                "status": new_status,
-                "start_date": start_date.strftime("%Y-%m-%d"),
-                "close_date": close_date.strftime("%Y-%m-%d") if close_date else None
-            })
+# Dashboard Tab
+if tab_selection == "📊 Dashboard":
+    st.header("📊 Dashboard View")
     
-    # Check if issues were modified
-    if edited_issues != node.get("issues", []):
-        node["issues"] = edited_issues
-        mark_data_modified()
+    # Summary Metrics
+    col1, col2, col3, col4 = st.columns(4)
+    col1.metric("Finalized", int(sub_df[sub_df["StageKey"] == "finalized"]["Count"].sum()))
+    col2.metric("UAT", int(sub_df[sub_df["StageKey"] == "uat"]["Count"].sum()))
+    col3.metric("Planned", int(sub_df[sub_df["StageKey"] == "planned"]["Count"].sum()))
+    col4.metric("Production", int(sub_df[sub_df["StageKey"] == "production"]["Count"].sum()))
 
-    if st.button("Add New Issue"):
-        node["issues"].append({
-            "id": f"ISS-{100+len(node['issues'])}", 
-            "description": "", 
-            "status": "Open",
-            "start_date": get_today_string(),
-            "close_date": None
-        })
-        mark_data_modified()
+    # Charts
+    colA, colB = st.columns(2)
+    fig1 = px.pie(sub_df, values="Count", names="PipelineType", title="Streaming vs Batch")
+    colA.plotly_chart(fig1, use_container_width=True)
+    fig2 = px.bar(
+        sub_df,
+        x="Stage",
+        y="Count",
+        color="PipelineType",
+        barmode="stack",
+        title="Pipelines by Stage (Stacked)",
+    )
+    colB.plotly_chart(fig2, use_container_width=True)
 
-    # Issues Summary Table
-    if issues:
-        st.subheader("📊 Issues Summary Table")
+    group_df = df[df["Group"] == selected_group].groupby(["Subsystem"])['Count'].sum().reset_index()
+    st.plotly_chart(
+        px.bar(group_df, x="Subsystem", y="Count", title=f"Total Pipelines per Subsystem in {selected_group}"),
+        use_container_width=True
+    )
+
+    # Issues Summary Table (Read-only view)
+    node = get_subsystem_node(data, selected_group, selected_subsystem)
+    if node and node.get("issues"):
+        st.header("📋 Issues Overview")
         
         # Prepare data for the table
         summary_data = []
-        for issue in issues:
+        for issue in node.get("issues", []):
             start_date_str = issue.get("start_date", "")
             close_date_str = issue.get("close_date", "")
             blocked_days = calculate_blocked_days(start_date_str, close_date_str)
@@ -352,10 +289,10 @@ if node:
         )
         
         # Summary statistics
-        total_open = len([i for i in issues if i["status"] == "Open"])
-        total_in_progress = len([i for i in issues if i["status"] == "In Progress"])
-        total_closed = len([i for i in issues if i["status"] == "Closed"])
-        total_blocked_days = sum([calculate_blocked_days(i.get("start_date", ""), i.get("close_date", "")) for i in issues])
+        total_open = len([i for i in node.get("issues", []) if i["status"] == "Open"])
+        total_in_progress = len([i for i in node.get("issues", []) if i["status"] == "In Progress"])
+        total_closed = len([i for i in node.get("issues", []) if i["status"] == "Closed"])
+        total_blocked_days = sum([calculate_blocked_days(i.get("start_date", ""), i.get("close_date", "")) for i in node.get("issues", [])])
         
         col1, col2, col3, col4 = st.columns(4)
         col1.metric("🔴 Open Issues", total_open)
@@ -363,44 +300,120 @@ if node:
         col3.metric("🟢 Closed", total_closed)
         col4.metric("📅 Total Blocked Days", total_blocked_days)
 
-    # Save and Download buttons
-    col1, col2 = st.columns(2)
+# Admin Tab
+elif tab_selection == "⚙️ Admin":
+    st.header("⚙️ Admin Panel")
+    st.info("Use this panel to edit pipeline data, contacts, and issues. Changes will be saved to the JSON file.")
     
-    with col1:
-        # Show save status
-        if st.session_state.data_modified:
-            st.warning("⚠️ You have unsaved changes!")
+    node = get_subsystem_node(data, selected_group, selected_subsystem)
+    if node:
+        st.subheader(f"Edit {selected_subsystem} Details")
+
+        st.subheader("Pipeline Counts")
+        for ptype in node.get("pipelines", {}):
+            st.markdown(f"**{ptype.title()} Pipelines:**")
+            cols = st.columns(len(STAGE_DISPLAY))
+            for idx, stag in enumerate(STAGE_DISPLAY):
+                val = node["pipelines"][ptype].get(stag, 0)
+                new_val = cols[idx].number_input(
+                    f"{ptype.title()} - {STAGE_DISPLAY[stag]}", min_value=0, max_value=1000,
+                    step=1, value=val, key=f"{selected_subsystem}-{ptype}-{stag}",
+                    on_change=mark_data_modified
+                )
+                if new_val != val:
+                    node["pipelines"][ptype][stag] = new_val
+                    mark_data_modified()
+
+        st.subheader("Contacts")
+        all_people = ["Alice", "Bob", "Charlie", "Diana", "Eve", "Frank", "Grace", "Hank", "Ivy", "Jai", "Kim", "Lena", "Mo", "Nia", "Omar"]
+        for ctype, label in [
+            ("producerTech", "Producer Tech"),
+            ("producerBusiness", "Producer Business"),
+            ("ourTech", "Our Tech"),
+            ("ourBusiness", "Our Business/PMO"),
+        ]:
+            new_contacts = st.multiselect(
+                label, all_people, default=node["contacts"].get(ctype, []), key=f"{selected_subsystem}-{ctype}",
+                on_change=mark_data_modified
+            )
+            if new_contacts != node["contacts"].get(ctype, []):
+                node["contacts"][ctype] = new_contacts
+                mark_data_modified()
+
+        st.subheader("Issues / Obstacles (Editable)")
+        issues = node.get("issues", [])
+        edited_issues = []
+        for i, issue in enumerate(issues):
+            exp = st.expander(f"Issue {i+1}: [{issue['id']}]")
+            with exp:
+                new_desc = st.text_input(f"Description", issue["description"], key=f"{selected_subsystem}-desc{i}", on_change=mark_data_modified)
+                new_status = st.selectbox("Status", ["Open", "In Progress", "Closed"], index=["Open", "In Progress", "Closed"].index(issue["status"]), key=f"{selected_subsystem}-status{i}", on_change=mark_data_modified)
+                
+                # Date fields
+                col1, col2 = st.columns(2)
+                with col1:
+                    start_date = st.date_input(
+                        "Start Date",
+                        value=datetime.strptime(issue.get("start_date", get_today_string()), "%Y-%m-%d").date() if issue.get("start_date") else date.today(),
+                        key=f"{selected_subsystem}-start{i}"
+                    )
+                with col2:
+                    close_date = st.date_input(
+                        "Close Date",
+                        value=datetime.strptime(issue.get("close_date", get_today_string()), "%Y-%m-%d").date() if issue.get("close_date") else None,
+                        key=f"{selected_subsystem}-close{i}"
+                    )
+                
+                # Auto-close date when status is "Closed"
+                if new_status == "Closed" and not close_date:
+                    close_date = date.today()
+                
+                # Validate date range
+                if not validate_date_range(start_date, close_date):
+                    st.error("⚠️ Close date cannot be before start date!")
+                    continue
+                
+                edited_issues.append({
+                    "id": issue["id"], 
+                    "description": new_desc, 
+                    "status": new_status,
+                    "start_date": start_date.strftime("%Y-%m-%d"),
+                    "close_date": close_date.strftime("%Y-%m-%d") if close_date else None
+                })
         
-        if st.button("💾 Save Changes", type="primary", disabled=not st.session_state.data_modified):
-            if save_data(data):
-                st.success("✅ Changes saved successfully! Data will persist after server restart.")
-            else:
-                st.error("❌ Failed to save changes. Please try again.")
-    
-    with col2:
-        st.download_button(
-            label="📥 Download JSON",
-            file_name="data_edited.json",
-            mime="application/json",
-            data=json.dumps(data, indent=2),
-        )
+        # Check if issues were modified
+        if edited_issues != node.get("issues", []):
+            node["issues"] = edited_issues
+            mark_data_modified()
 
-# Charts
-colA, colB = st.columns(2)
-fig1 = px.pie(sub_df, values="Count", names="PipelineType", title="Streaming vs Batch")
-colA.plotly_chart(fig1, use_container_width=True)
-fig2 = px.bar(
-    sub_df,
-    x="Stage",
-    y="Count",
-    color="PipelineType",
-    barmode="stack",
-    title="Pipelines by Stage (Stacked)",
-)
-colB.plotly_chart(fig2, use_container_width=True)
+        if st.button("Add New Issue"):
+            node["issues"].append({
+                "id": f"ISS-{100+len(node['issues'])}", 
+                "description": "", 
+                "status": "Open",
+                "start_date": get_today_string(),
+                "close_date": None
+            })
+            mark_data_modified()
 
-group_df = df[df["Group"] == selected_group].groupby(["Subsystem"])['Count'].sum().reset_index()
-st.plotly_chart(
-    px.bar(group_df, x="Subsystem", y="Count", title=f"Total Pipelines per Subsystem in {selected_group}"),
-    use_container_width=True
-)
+        # Save and Download buttons
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            # Show save status
+            if st.session_state.data_modified:
+                st.warning("⚠️ You have unsaved changes!")
+            
+            if st.button("💾 Save Changes", type="primary", disabled=not st.session_state.data_modified):
+                if save_data(data):
+                    st.success("✅ Changes saved successfully! Data will persist after server restart.")
+                else:
+                    st.error("❌ Failed to save changes. Please try again.")
+        
+        with col2:
+            st.download_button(
+                label="📥 Download JSON",
+                file_name="data_edited.json",
+                mime="application/json",
+                data=json.dumps(data, indent=2),
+            )
