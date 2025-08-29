@@ -3,8 +3,7 @@ project-planner-dashboard
 
 
 # 1) create venv (optional)
-python -m venv .venv && . .venv/Scripts/activate   # on Windows
-# or: source .venv/bin/activate                     # on macOS/Linux
+python -m venv .venv && .venv/Scripts/activate
 
 # 2) install deps
 pip install -r requirements.txt

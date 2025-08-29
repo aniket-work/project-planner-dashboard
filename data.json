@@ -38,12 +38,16 @@
             {
               "id": "ISS-101",
               "description": "Data delay from source",
-              "status": "Open"
+              "status": "Open",
+              "start_date": "2025-08-27",
+              "close_date": null
             },
             {
               "id": "ISS-102",
               "description": "Schema mismatch on v2",
-              "status": "In Progress"
+              "status": "In Progress",
+              "start_date": "2025-08-25",
+              "close_date": null
             }
           ]
         },
@@ -51,7 +55,7 @@
           "name": "SubsystemY",
           "pipelines": {
             "streaming": {
-              "finalized": 5,
+              "finalized": 6,
               "uat": 2,
               "planned": 1,
               "production": 1
@@ -115,7 +119,9 @@
             {
               "id": "ISS-201",
               "description": "Access to UAT blocked",
-              "status": "Open"
+              "status": "Open",
+              "start_date": "2024-01-25",
+              "close_date": null
             }
           ]
         }
