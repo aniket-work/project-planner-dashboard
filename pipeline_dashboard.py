@@ -763,3 +763,165 @@ elif tab_selection == "Admin":
                             st.rerun()
                         else:
                             st.error("Please fill in all required fields (marked with *)")
+         
+        # Issues Management Section
+        st.markdown("---")
+        st.subheader("Issues Management")
+        
+        # Show existing issues
+        existing_issues = node.get("issues", [])
+        
+        if existing_issues:
+            st.markdown(f"**Existing Issues ({len(existing_issues)}):**")
+            
+            # Create issues table with action columns
+            st.markdown("**Issues Table:**")
+            
+            # Create header row for issues
+            issue_header_cols = st.columns([1, 3, 1, 1, 1, 1, 1])
+            with issue_header_cols[0]:
+                st.markdown("**Issue ID**")
+            with issue_header_cols[1]:
+                st.markdown("**Description**")
+            with issue_header_cols[2]:
+                st.markdown("**Status**")
+            with issue_header_cols[3]:
+                st.markdown("**Start Date**")
+            with issue_header_cols[4]:
+                st.markdown("**Close Date**")
+            with issue_header_cols[5]:
+                st.markdown("**Edit**")
+            with issue_header_cols[6]:
+                st.markdown("**Delete**")
+            
+            # Create data rows for issues with action buttons
+            for idx, issue in enumerate(existing_issues):
+                issue_row_cols = st.columns([1, 3, 1, 1, 1, 1, 1])
+                
+                with issue_row_cols[0]:
+                    st.write(issue.get('id', 'N/A'))
+                with issue_row_cols[1]:
+                    st.write(issue.get('description', 'N/A'))
+                with issue_row_cols[2]:
+                    st.write(issue.get('status', 'N/A'))
+                with issue_row_cols[3]:
+                    st.write(format_date_display(issue.get('start_date', '')))
+                with issue_row_cols[4]:
+                    st.write(format_date_display(issue.get('close_date', '')))
+                with issue_row_cols[5]:
+                    if st.button("✏️ Edit", key=f"edit_issue_{idx}_{selected_subsystem}", 
+                               type="primary", help="Edit this issue"):
+                        st.session_state.edit_issue = {
+                            'index': idx,
+                            'data': issue
+                        }
+                        st.rerun()
+                with issue_row_cols[6]:
+                    if st.button("🗑️ Delete", key=f"delete_issue_{idx}_{selected_subsystem}", 
+                               type="secondary", help="Delete this issue"):
+                        # Remove the issue
+                        node["issues"].pop(idx)
+                        # Save immediately so the deletion persists
+                        if save_data(data):
+                            st.success(f"Issue {issue.get('id', 'Unknown')} deleted!")
+                        else:
+                            st.error("Failed to delete issue. Please try again.")
+                        st.rerun()
+                
+                # Add separator between rows
+                st.markdown("---")
+        else:
+            st.info("No issues found. Add your first issue below!")
+        
+        # Add New Issue Section
+        st.markdown("---")
+        st.subheader("Add New Issue")
+        
+        # Check if we're editing an existing issue
+        editing_issue = st.session_state.get('edit_issue', None)
+        is_editing_issue = editing_issue is not None
+        
+        if is_editing_issue:
+            st.info(f"Editing issue: {editing_issue['data'].get('id', 'Unknown')}")
+            issue_data = editing_issue['data']
+        else:
+            issue_data = {}
+        
+        # Issue form
+        with st.expander("Add Single Issue", expanded=True):
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                issue_id = st.text_input("Issue ID*", value=issue_data.get('id', ''), 
+                                       help="Unique identifier for the issue", key="new_issue_id")
+                description = st.text_area("Description*", value=issue_data.get('description', ''), 
+                                         help="Detailed description of the issue", key="new_issue_desc")
+                status = st.selectbox("Status*", ["Open", "In Progress", "Closed"], 
+                                   index=["Open", "In Progress", "Closed"].index(issue_data.get('status', 'Open')), 
+                                   help="Current status of the issue", key="new_issue_status")
+            
+            with col2:
+                start_date = st.date_input("Start Date*", 
+                                         value=datetime.strptime(issue_data.get('start_date', get_today_string()), '%Y-%m-%d').date() if issue_data.get('start_date') else datetime.now().date(), 
+                                         help="When the issue was first identified", key="new_issue_start")
+                close_date = st.date_input("Close Date", 
+                                         value=datetime.strptime(issue_data.get('close_date', get_today_string()), '%Y-%m-%d').date() if issue_data.get('close_date') else None, 
+                                         help="When the issue was resolved (leave empty if still open)", key="new_issue_close")
+            
+            if is_editing_issue:
+                col1, col2 = st.columns(2)
+                with col1:
+                    if st.button("Update Issue", key=f"update_issue_{selected_subsystem}", type="primary"):
+                        if issue_id and description and status and start_date:
+                            # Validate date range
+                            if close_date and not validate_date_range(start_date, close_date):
+                                st.error("Close date cannot be before start date")
+                            else:
+                                # Update existing issue
+                                node["issues"][editing_issue['index']] = {
+                                    "id": issue_id,
+                                    "description": description,
+                                    "status": status,
+                                    "start_date": start_date.strftime("%Y-%m-%d"),
+                                    "close_date": close_date.strftime("%Y-%m-%d") if close_date else None
+                                }
+                                # Clear edit mode
+                                if 'edit_issue' in st.session_state:
+                                    del st.session_state.edit_issue
+                                # Save immediately so the update persists
+                                if save_data(data):
+                                    st.success(f"Issue updated!")
+                                else:
+                                    st.error("Failed to update issue. Please try again.")
+                                st.rerun()
+                        else:
+                            st.error("Please fill in all required fields (marked with *)")
+                
+                with col2:
+                    if st.button("Cancel Edit", key=f"cancel_issue_{selected_subsystem}", type="secondary"):
+                        if 'edit_issue' in st.session_state:
+                            del st.session_state.edit_issue
+                        st.rerun()
+            else:
+                if st.button("Add Issue", key=f"add_issue_{selected_subsystem}", type="primary"):
+                    if issue_id and description and status and start_date:
+                        # Validate date range
+                        if close_date and not validate_date_range(start_date, close_date):
+                            st.error("Close date cannot be before start date")
+                        else:
+                            new_issue = {
+                                "id": issue_id,
+                                "description": description,
+                                "status": status,
+                                "start_date": start_date.strftime("%Y-%m-%d"),
+                                "close_date": close_date.strftime("%Y-%m-%d") if close_date else None
+                            }
+                            node["issues"].append(new_issue)
+                            # Save immediately so the issue persists after rerun
+                            if save_data(data):
+                                st.success(f"Added new issue: {issue_id}")
+                            else:
+                                st.error("Failed to save issue. Please try again.")
+                            st.rerun()
+                    else:
+                        st.error("Please fill in all required fields (marked with *)")
