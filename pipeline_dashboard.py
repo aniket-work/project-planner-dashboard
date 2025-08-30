@@ -87,8 +87,7 @@ BATCH_FIELDS = {
     "file_size": "File size in MB",
     "uat_date": "Planned UAT deploy date",
     "prod_date": "Planned PROD deploy date",
-    "uat_status": "Current UAT status",
-    "prod_status": "Current PROD status",
+    "status": "Current pipeline status",
     "comment": "Additional comments or notes"
 }
 
@@ -101,8 +100,7 @@ STREAMING_FIELDS = {
     "rough_volume": "Total size in MB between start and end time",
     "uat_date": "Planned UAT deploy date",
     "prod_date": "Planned PROD deploy date",
-    "uat_status": "Current UAT status",
-    "prod_status": "Current PROD status",
+    "status": "Current pipeline status",
     "comment": "Additional comments or notes"
 }
 
@@ -226,13 +224,15 @@ def update_pipeline_counts(data: dict):
                         counts = {"finalized": 0, "uat": 0, "planned": 0, "production": 0}
                         
                         for pipeline in pipelines:
-                            status = pipeline.get("uat_status", "").lower()
-                            if "uat" in status or "testing" in status or "in progress" in status:
+                            status = pipeline.get("status", "").lower()
+                            if status == "uat":
                                 counts["uat"] += 1
-                            elif "prod" in status or "production" in status or "completed" in status:
+                            elif status == "prod":
                                 counts["production"] += 1
-                            elif "plan" in status or "draft" in status or "planned" in status:
+                            elif status == "planned":
                                 counts["planned"] += 1
+                            elif status == "blocked":
+                                counts["finalized"] += 1  # Blocked pipelines count as finalized for now
                             else:
                                 counts["finalized"] += 1
                         
@@ -437,8 +437,7 @@ elif tab_selection == "Admin":
                         "Run Day": pipeline.get('run_day', 'N/A'),
                         "Run Time": pipeline.get('run_timestamp', 'N/A'),
                         "File Size": f"{pipeline.get('file_size', 'N/A')} MB",
-                        "UAT Status": pipeline.get('uat_status', 'N/A'),
-                        "PROD Status": pipeline.get('prod_status', 'N/A'),
+                        "Status": pipeline.get('status', 'N/A'),
                         "Edit": f"edit_{idx}_{pipeline_type}_{selected_subsystem}",
                         "Delete": f"delete_{idx}_{pipeline_type}_{selected_subsystem}"
                     })
@@ -450,8 +449,7 @@ elif tab_selection == "Admin":
                         "End Time": pipeline.get('end_time', 'N/A'),
                         "Run Day": pipeline.get('run_day', 'N/A'),
                         "Volume": f"{pipeline.get('rough_volume', 'N/A')} MB",
-                        "UAT Status": pipeline.get('uat_status', 'N/A'),
-                        "PROD Status": pipeline.get('prod_status', 'N/A'),
+                        "Status": pipeline.get('status', 'N/A'),
                         "Edit": f"edit_{idx}_{pipeline_type}_{selected_subsystem}",
                         "Delete": f"delete_{idx}_{pipeline_type}_{selected_subsystem}"
                     })
@@ -460,7 +458,7 @@ elif tab_selection == "Admin":
             st.markdown("**Pipeline Table:**")
             
             # Create header row
-            header_cols = st.columns([2, 2, 1, 1, 1, 1, 1, 1, 1, 1])
+            header_cols = st.columns([2, 2, 1, 1, 1, 1, 1, 1, 1])
             with header_cols[0]:
                 st.markdown("**Pipeline Name**")
             with header_cols[1]:
@@ -474,17 +472,15 @@ elif tab_selection == "Admin":
             with header_cols[5]:
                 st.markdown("**File Size**")
             with header_cols[6]:
-                st.markdown("**UAT Status**")
+                st.markdown("**Status**")
             with header_cols[7]:
-                st.markdown("**PROD Status**")
-            with header_cols[8]:
                 st.markdown("**Edit**")
-            with header_cols[9]:
+            with header_cols[8]:
                 st.markdown("**Delete**")
             
             # Create data rows with action buttons
             for idx, pipeline in enumerate(existing_pipelines):
-                row_cols = st.columns([2, 2, 1, 1, 1, 1, 1, 1, 1, 1])
+                row_cols = st.columns([2, 2, 1, 1, 1, 1, 1, 1, 1])
                 
                 if pipeline_type == "batch":
                     with row_cols[0]:
@@ -500,10 +496,8 @@ elif tab_selection == "Admin":
                     with row_cols[5]:
                         st.write(f"{pipeline.get('file_size', 'N/A')} MB")
                     with row_cols[6]:
-                        st.write(pipeline.get('uat_status', 'N/A'))
+                        st.write(pipeline.get('status', 'N/A'))
                     with row_cols[7]:
-                        st.write(pipeline.get('prod_status', 'N/A'))
-                    with row_cols[8]:
                         if st.button("✏️ Edit", key=f"edit_{idx}_{pipeline_type}_{selected_subsystem}", 
                                    type="primary", help="Edit this pipeline"):
                             st.session_state.edit_pipeline = {
@@ -512,7 +506,7 @@ elif tab_selection == "Admin":
                                 'data': pipeline
                             }
                             st.rerun()
-                    with row_cols[9]:
+                    with row_cols[8]:
                         if st.button("🗑️ Delete", key=f"delete_{idx}_{pipeline_type}_{selected_subsystem}", 
                                    type="secondary", help="Delete this pipeline"):
                             # Remove the pipeline
@@ -538,10 +532,8 @@ elif tab_selection == "Admin":
                     with row_cols[5]:
                         st.write(f"{pipeline.get('rough_volume', 'N/A')} MB")
                     with row_cols[6]:
-                        st.write(pipeline.get('uat_status', 'N/A'))
+                        st.write(pipeline.get('status', 'N/A'))
                     with row_cols[7]:
-                        st.write(pipeline.get('prod_status', 'N/A'))
-                    with row_cols[8]:
                         if st.button("✏️ Edit", key=f"edit_{idx}_{pipeline_type}_{selected_subsystem}", 
                                    type="primary", help="Edit this pipeline"):
                             st.session_state.edit_pipeline = {
@@ -550,7 +542,7 @@ elif tab_selection == "Admin":
                                 'data': pipeline
                             }
                             st.rerun()
-                    with row_cols[9]:
+                    with row_cols[8]:
                         if st.button("🗑️ Delete", key=f"delete_{idx}_{pipeline_type}_{selected_subsystem}", 
                                    type="secondary", help="Delete this pipeline"):
                             # Remove the pipeline
@@ -610,12 +602,9 @@ elif tab_selection == "Admin":
                     prod_date = st.date_input("PROD Date", 
                                             value=datetime.strptime(pipeline_data.get('prod_date', '2025-01-01'), '%Y-%m-%d').date() if pipeline_data.get('prod_date') else datetime.now().date(), 
                                             help=BATCH_FIELDS["prod_date"], key="new_batch_prod")
-                    uat_status = st.selectbox("UAT Status*", ["planned", "in progress", "completed", "blocked"], 
-                                           index=["planned", "in progress", "completed", "blocked"].index(pipeline_data.get('uat_status', 'planned')), 
-                                           help=BATCH_FIELDS["uat_status"], key="new_batch_uat_status")
-                    prod_status = st.selectbox("PROD Status*", ["planned", "in progress", "completed", "blocked"], 
-                                            index=["planned", "in progress", "completed", "blocked"].index(pipeline_data.get('prod_status', 'planned')), 
-                                            help=BATCH_FIELDS["prod_status"], key="new_batch_prod_status")
+                    status = st.selectbox("Status*", ["Planned", "UAT", "PROD", "Blocked"], 
+                                       index=["Planned", "UAT", "PROD", "Blocked"].index(pipeline_data.get('status', 'Planned')), 
+                                       help=BATCH_FIELDS["status"], key="new_batch_status")
                     comment = st.text_area("Comment", value=pipeline_data.get('comment', ''), 
                                          help=BATCH_FIELDS["comment"], key="new_batch_comment")
                 
@@ -634,8 +623,7 @@ elif tab_selection == "Admin":
                                     "file_size": str(file_size),
                                     "uat_date": uat_date.strftime("%Y-%m-%d") if uat_date else "",
                                     "prod_date": prod_date.strftime("%Y-%m-%d") if prod_date else "",
-                                    "uat_status": uat_status,
-                                    "prod_status": prod_status,
+                                    "status": status,
                                     "comment": comment
                                 }
                                 update_pipeline_counts(data)
@@ -668,8 +656,7 @@ elif tab_selection == "Admin":
                                 "file_size": str(file_size),
                                 "uat_date": uat_date.strftime("%Y-%m-%d") if uat_date else "",
                                 "prod_date": prod_date.strftime("%Y-%m-%d") if prod_date else "",
-                                "uat_status": uat_status,
-                                "prod_status": prod_status,
+                                "status": status,
                                 "comment": comment
                             }
                             node["pipelineDetails"][pipeline_type].append(new_pipeline)
@@ -709,12 +696,9 @@ elif tab_selection == "Admin":
                     prod_date = st.date_input("PROD Date", 
                                             value=datetime.strptime(pipeline_data.get('prod_date', '2025-01-01'), '%Y-%m-%d').date() if pipeline_data.get('prod_date') else datetime.now().date(), 
                                             help=STREAMING_FIELDS["prod_date"], key="new_stream_prod")
-                    uat_status = st.selectbox("UAT Status*", ["planned", "in progress", "completed", "blocked"], 
-                                           index=["planned", "in progress", "completed", "blocked"].index(pipeline_data.get('uat_status', 'planned')), 
-                                           help=STREAMING_FIELDS["uat_status"], key="new_stream_uat_status")
-                    prod_status = st.selectbox("PROD Status*", ["planned", "in progress", "completed", "blocked"], 
-                                            index=["planned", "in progress", "completed", "blocked"].index(pipeline_data.get('prod_status', 'planned')), 
-                                            help=STREAMING_FIELDS["prod_status"], key="new_stream_prod_status")
+                    status = st.selectbox("Status*", ["Planned", "UAT", "PROD", "Blocked"], 
+                                       index=["Planned", "UAT", "PROD", "Blocked"].index(pipeline_data.get('status', 'Planned')), 
+                                       help=STREAMING_FIELDS["status"], key="new_stream_status")
                     comment = st.text_area("Comment", value=pipeline_data.get('comment', ''), 
                                          help=STREAMING_FIELDS["comment"], key="new_stream_comment")
                 
@@ -733,8 +717,7 @@ elif tab_selection == "Admin":
                                     "rough_volume": str(rough_volume),
                                     "uat_date": uat_date.strftime("%Y-%m-%d") if uat_date else "",
                                     "prod_date": prod_date.strftime("%Y-%m-%d") if prod_date else "",
-                                    "uat_status": uat_status,
-                                    "prod_status": prod_status,
+                                    "status": status,
                                     "comment": comment
                                 }
                                 update_pipeline_counts(data)
@@ -767,8 +750,7 @@ elif tab_selection == "Admin":
                                 "rough_volume": str(rough_volume),
                                 "uat_date": uat_date.strftime("%Y-%m-%d") if uat_date else "",
                                 "prod_date": prod_date.strftime("%Y-%m-%d") if prod_date else "",
-                                "uat_status": uat_status,
-                                "prod_status": prod_status,
+                                "status": status,
                                 "comment": comment
                             }
                             node["pipelineDetails"][pipeline_type].append(new_pipeline)

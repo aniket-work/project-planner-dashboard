@@ -8,15 +8,15 @@
           "pipelines": {
             "streaming": {
               "finalized": 0,
-              "uat": 0,
-              "planned": 0,
-              "production": 0
-            },
-            "batch": {
-              "finalized": 0,
               "uat": 2,
               "planned": 1,
-              "production": 0
+              "production": 1
+            },
+            "batch": {
+              "finalized": 1,
+              "uat": 3,
+              "planned": 1,
+              "production": 1
             }
           },
           "contacts": {
@@ -51,45 +51,127 @@
             }
           ],
           "pipelineDetails": {
-            "streaming": [],
+            "streaming": [
+              {
+                "pipeline_name": "Streaming_pipeline_1",
+                "data_name": "Streaming_pipeline_1",
+                "start_time": "01:57",
+                "end_time": "01:57",
+                "run_day": "monday",
+                "rough_volume": "55.0",
+                "uat_date": "2025-08-30",
+                "prod_date": "2025-08-30",
+                "status": "Planned",
+                "comment": ""
+              },
+              {
+                "pipeline_name": "Streaming_pipeline_2",
+                "data_name": "Streaming_pipeline_2",
+                "start_time": "01:57",
+                "end_time": "01:57",
+                "run_day": "monday",
+                "rough_volume": "55.0",
+                "uat_date": "2025-08-30",
+                "prod_date": "2025-08-30",
+                "status": "UAT",
+                "comment": ""
+              },
+              {
+                "pipeline_name": "Streaming_pipeline_3",
+                "data_name": "Streaming_pipeline_3",
+                "start_time": "01:57",
+                "end_time": "01:57",
+                "run_day": "monday",
+                "rough_volume": "55.0",
+                "uat_date": "2025-08-30",
+                "prod_date": "2025-08-30",
+                "status": "UAT",
+                "comment": ""
+              },
+              {
+                "pipeline_name": "Streaming_pipeline_4",
+                "data_name": "Streaming_pipeline_4",
+                "start_time": "01:57",
+                "end_time": "01:57",
+                "run_day": "monday",
+                "rough_volume": "55.0",
+                "uat_date": "2025-08-30",
+                "prod_date": "2025-08-30",
+                "status": "PROD",
+                "comment": ""
+              }
+            ],
             "batch": [
               {
-                "pipeline_name": "batch_pipeline_1",
-                "data_name": "batch_pipeline_1",
+                "pipeline_name": "batch_test_1",
+                "data_name": "batch_test_1",
                 "frequency": "daily",
                 "run_day": "Mon",
-                "run_timestamp": "00:42",
+                "run_timestamp": "01:52",
+                "file_size": "33.0",
+                "uat_date": "2025-08-30",
+                "prod_date": "2025-08-30",
+                "status": "UAT",
+                "comment": ""
+              },
+              {
+                "pipeline_name": "batch_test_2",
+                "data_name": "batch_test_2",
+                "frequency": "daily",
+                "run_day": "Mon",
+                "run_timestamp": "01:53",
+                "file_size": "33.0",
+                "uat_date": "2025-08-30",
+                "prod_date": "2025-08-30",
+                "status": "Planned",
+                "comment": ""
+              },
+              {
+                "pipeline_name": "batch_test_3",
+                "data_name": "batch_test_3",
+                "frequency": "daily",
+                "run_day": "Mon",
+                "run_timestamp": "01:53",
+                "file_size": "33.0",
+                "uat_date": "2025-08-30",
+                "prod_date": "2025-08-30",
+                "status": "PROD",
+                "comment": ""
+              },
+              {
+                "pipeline_name": "batch_test_4",
+                "data_name": "batch_test_4",
+                "frequency": "daily",
+                "run_day": "Tues",
+                "run_timestamp": "01:55",
                 "file_size": "55.0",
                 "uat_date": "2025-08-30",
                 "prod_date": "2025-08-30",
-                "uat_status": "in progress",
-                "prod_status": "planned",
+                "status": "Blocked",
                 "comment": ""
               },
               {
-                "pipeline_name": "batch_pipeline_2",
-                "data_name": "batch_pipeline_2",
+                "pipeline_name": "batch_test_5",
+                "data_name": "batch_test_5",
                 "frequency": "daily",
-                "run_day": "Mon",
-                "run_timestamp": "00:42",
-                "file_size": "100.003",
+                "run_day": "Tues",
+                "run_timestamp": "01:55",
+                "file_size": "55.0",
                 "uat_date": "2025-08-30",
                 "prod_date": "2025-08-30",
-                "uat_status": "in progress",
-                "prod_status": "completed",
+                "status": "UAT",
                 "comment": ""
               },
               {
-                "pipeline_name": "batch_pipeline_3",
-                "data_name": "batch_pipeline_3",
+                "pipeline_name": "batch_test_6",
+                "data_name": "batch_test_6",
                 "frequency": "daily",
-                "run_day": "Wed",
-                "run_timestamp": "00:43",
-                "file_size": "67.0",
+                "run_day": "Tues",
+                "run_timestamp": "01:55",
+                "file_size": "55.0",
                 "uat_date": "2025-08-30",
                 "prod_date": "2025-08-30",
-                "uat_status": "planned",
-                "prod_status": "completed",
+                "status": "UAT",
                 "comment": ""
               }
             ]
@@ -141,8 +223,8 @@
               "production": 0
             },
             "batch": {
-              "finalized": 0,
-              "uat": 1,
+              "finalized": 1,
+              "uat": 0,
               "planned": 0,
               "production": 0
             }
