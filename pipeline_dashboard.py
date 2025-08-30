@@ -7,62 +7,67 @@ from datetime import datetime, date
 
 from pathlib import Path
 
-# Default data structure if no file exists
-SAMPLE_DATA = {
-    "Level1Groups": [
+# Your actual data structure
+DEFAULT_DATA = {
+  "Level1Groups": [
+    {
+      "name": "GroupA",
+      "subsystems": [
         {
-            "name": "GroupA",
-            "subsystems": [
-                {
-                    "name": "SubsystemX",
-                    "pipelines": {
-                        "streaming": {"finalized": 10, "uat": 5, "planned": 3, "production": 2},
-                        "batch": {"finalized": 20, "uat": 7, "planned": 4, "production": 9}
-                    },
-                    "contacts": {
-                        "producerTech": ["Alice", "Bob"],
-                        "producerBusiness": ["Eve"],
-                        "ourTech": ["Charlie"],
-                        "ourBusiness": ["Diana"]
-                    },
-                              "issues": [
-            {"id": "ISS-101", "description": "Data delay from source", "status": "Open", "start_date": "2024-01-15", "close_date": None},
-            {"id": "ISS-102", "description": "Schema mismatch on v2", "status": "In Progress", "start_date": "2024-01-20", "close_date": None}
-          ]
-                },
-                {
-                    "name": "SubsystemY",
-                    "pipelines": {
-                        "streaming": {"finalized": 5, "uat": 2, "planned": 1, "production": 1},
-                        "batch": {"finalized": 8, "uat": 3, "planned": 2, "production": 2}
-                    },
-                    "contacts": {
-                        "producerTech": ["Frank"],
-                        "producerBusiness": ["Grace"],
-                        "ourTech": ["Hank"],
-                        "ourBusiness": ["Ivy"]
-                    },
-                    "issues": []
-                },
-                {
-                    "name": "SubsystemZ",
-                    "pipelines": {
-                        "streaming": {"finalized": 2, "uat": 1, "planned": 6, "production": 0},
-                        "batch": {"finalized": 3, "uat": 4, "planned": 5, "production": 1}
-                    },
-                    "contacts": {
-                        "producerTech": ["Jai", "Kim"],
-                        "producerBusiness": ["Lena"],
-                        "ourTech": ["Mo", "Nia"],
-                        "ourBusiness": ["Omar"]
-                    },
-                              "issues": [
-            {"id": "ISS-201", "description": "Access to UAT blocked", "status": "Open", "start_date": "2024-01-25", "close_date": None}
-          ]
-                }
+          "name": "SubsystemX",
+          "pipelines": {
+            "streaming": {
+              "finalized": 0,
+              "uat": 0,
+              "planned": 0,
+              "production": 0
+            },
+            "batch": {
+              "finalized": 0,
+              "uat": 0,
+              "planned": 0,
+              "production": 0
+            }
+          },
+          "contacts": {
+            "producerTech": [
+              "Alice",
+              "Bob"
+            ],
+            "producerBusiness": [
+              "Eve"
+            ],
+            "ourTech": [
+              "Charlie"
+            ],
+            "ourBusiness": [
+              "Diana"
             ]
+          },
+          "issues": [
+            {
+              "id": "ISS-101",
+              "description": "Data delay from source",
+              "status": "Open",
+              "start_date": "2025-08-27",
+              "close_date": None
+            },
+            {
+              "id": "ISS-102",
+              "description": "Schema mismatch on v2",
+              "status": "In Progress",
+              "start_date": "2025-08-25",
+              "close_date": None
+            }
+          ],
+          "pipelineDetails": {
+            "streaming": [],
+            "batch": []
+          }
         }
-    ]
+      ]
+    }
+  ]
 }
 
 STAGE_DISPLAY = {
@@ -72,6 +77,35 @@ STAGE_DISPLAY = {
     "production": "Production",
 }
 
+# Pipeline field definitions with tooltips
+BATCH_FIELDS = {
+    "pipeline_name": "Actual name of pipeline",
+    "data_name": "What business/producer team recognize this data flow",
+    "frequency": "Frequency of file publish (daily, weekly, monthly)",
+    "run_day": "Which day of week/month this file will be pushed",
+    "run_timestamp": "Exact time of run",
+    "file_size": "File size in MB",
+    "uat_date": "Planned UAT deploy date",
+    "prod_date": "Planned PROD deploy date",
+    "uat_status": "Current UAT status",
+    "prod_status": "Current PROD status",
+    "comment": "Additional comments or notes"
+}
+
+STREAMING_FIELDS = {
+    "pipeline_name": "Actual name of pipeline",
+    "data_name": "What business/producer team recognize this data flow",
+    "start_time": "Streaming start time",
+    "end_time": "Streaming end time",
+    "run_day": "Which day of week/month this file will be pushed",
+    "rough_volume": "Total size in MB between start and end time",
+    "uat_date": "Planned UAT deploy date",
+    "prod_date": "Planned PROD deploy date",
+    "uat_status": "Current UAT status",
+    "prod_status": "Current PROD status",
+    "comment": "Additional comments or notes"
+}
+
 def load_data() -> dict:
     """Load data from JSON file, create default if file doesn't exist"""
     data_file = "data.json"
@@ -79,14 +113,20 @@ def load_data() -> dict:
     if os.path.exists(data_file):
         try:
             with open(data_file, 'r', encoding='utf-8') as f:
-                return json.load(f)
+                data = json.load(f)
+                # Ensure all subsystems have pipelineDetails
+                for group in data.get("Level1Groups", []):
+                    for subsystem in group.get("subsystems", []):
+                        if "pipelineDetails" not in subsystem:
+                            subsystem["pipelineDetails"] = {"streaming": [], "batch": []}
+                return data
         except (json.JSONDecodeError, FileNotFoundError) as e:
             st.warning(f"Error loading data file: {e}. Using default data.")
-            return SAMPLE_DATA
+            return DEFAULT_DATA
     else:
         # Create default data file if it doesn't exist
-        save_data(SAMPLE_DATA)
-        return SAMPLE_DATA
+        save_data(DEFAULT_DATA)
+        return DEFAULT_DATA
 
 def save_data(data: dict) -> bool:
     """Save data to JSON file"""
@@ -94,7 +134,8 @@ def save_data(data: dict) -> bool:
         with open("data.json", 'w', encoding='utf-8') as f:
             json.dump(data, f, indent=2, ensure_ascii=False)
         # Reset modification flag after successful save
-        st.session_state.data_modified = False
+        if 'data_modified' in st.session_state:
+            st.session_state.data_modified = False
         return True
     except Exception as e:
         st.error(f"Error saving data: {e}")
@@ -174,9 +215,69 @@ def get_subsystem_node(data: dict, group_name: str, subsystem_name: str) -> dict
                     return subsystem
     return None
 
+def update_pipeline_counts(data: dict):
+    """Update pipeline counts based on actual pipeline details"""
+    for group in data.get("Level1Groups", []):
+        for subsystem in group.get("subsystems", []):
+            if "pipelineDetails" in subsystem:
+                for ptype in ["streaming", "batch"]:
+                    if ptype in subsystem["pipelineDetails"]:
+                        pipelines = subsystem["pipelineDetails"][ptype]
+                        counts = {"finalized": 0, "uat": 0, "planned": 0, "production": 0}
+                        
+                        for pipeline in pipelines:
+                            status = pipeline.get("uat_status", "").lower()
+                            if "uat" in status or "testing" in status or "in progress" in status:
+                                counts["uat"] += 1
+                            elif "prod" in status or "production" in status or "completed" in status:
+                                counts["production"] += 1
+                            elif "plan" in status or "draft" in status or "planned" in status:
+                                counts["planned"] += 1
+                            else:
+                                counts["finalized"] += 1
+                        
+                        # Update the counts
+                        if "pipelines" not in subsystem:
+                            subsystem["pipelines"] = {}
+                        if ptype not in subsystem["pipelines"]:
+                            subsystem["pipelines"][ptype] = {}
+                        subsystem["pipelines"][ptype].update(counts)
+
+def validate_excel_upload(df: pd.DataFrame, pipeline_type: str) -> tuple[bool, str]:
+    """Validate Excel upload format"""
+    if pipeline_type == "batch":
+        required_fields = list(BATCH_FIELDS.keys())
+    else:
+        required_fields = list(STREAMING_FIELDS.keys())
+    
+    missing_fields = [field for field in required_fields if field not in df.columns]
+    
+    if missing_fields:
+        return False, f"Missing required columns: {', '.join(missing_fields)}"
+    
+    if df.empty:
+        return False, "Excel file is empty"
+    
+    return True, "Valid format"
+
+def process_excel_upload(df: pd.DataFrame, pipeline_type: str) -> list:
+    """Process Excel upload and convert to pipeline objects"""
+    pipelines = []
+    
+    for _, row in df.iterrows():
+        pipeline = {}
+        for field in df.columns:
+            if pd.notna(row[field]):
+                pipeline[field] = str(row[field])
+            else:
+                pipeline[field] = ""
+        pipelines.append(pipeline)
+    
+    return pipelines
+
 # -------- Streamlit UI --------
 st.set_page_config(page_title="Pipeline Onboarding Dashboard", layout="wide")
-st.title("📊 Pipeline Onboarding Dashboard")
+st.title("Pipeline Onboarding Dashboard")
 
 # Load data and show status
 data = load_data()
@@ -188,12 +289,12 @@ col1, col2 = st.columns([3, 1])
 with col1:
     if os.path.exists("data.json"):
         file_stats = os.stat("data.json")
-        st.info(f"📁 Data loaded from: data.json (Last modified: {pd.Timestamp(file_stats.st_mtime, unit='s').strftime('%Y-%m-%d %H:%M:%S')})")
+        st.info(f"Data loaded from: data.json (Last modified: {pd.Timestamp(file_stats.st_mtime, unit='s').strftime('%Y-%m-%d %H:%M:%S')})")
     else:
-        st.info("📁 Using default data (data.json will be created on first save)")
+        st.info("Using default data (data.json will be created on first save)")
 
 with col2:
-    if st.button("🔄 Refresh Data"):
+    if st.button("Refresh Data", key="refresh_dashboard_main"):
         st.rerun()
 
 # Initialize session state for tracking changes
@@ -202,7 +303,7 @@ if 'data_modified' not in st.session_state:
 
 # Sidebar navigation
 st.sidebar.title("Navigation")
-tab_selection = st.sidebar.radio("Select Tab", ["📊 Dashboard", "⚙️ Admin"])
+tab_selection = st.sidebar.radio("Select Tab", ["Dashboard", "Admin"])
 
 # Sidebar filters populated from data
 groups = df["Group"].dropna().unique()
@@ -217,8 +318,8 @@ if sub_df.empty:
     st.stop()
 
 # Dashboard Tab
-if tab_selection == "📊 Dashboard":
-    st.header("📊 Dashboard View")
+if tab_selection == "Dashboard":
+    st.header("Dashboard View")
     
     # Summary Metrics
     col1, col2, col3, col4 = st.columns(4)
@@ -250,7 +351,7 @@ if tab_selection == "📊 Dashboard":
     # Issues Summary Table (Read-only view)
     node = get_subsystem_node(data, selected_group, selected_subsystem)
     if node and node.get("issues"):
-        st.header("📋 Issues Overview")
+        st.header("Issues Overview")
         
         # Prepare data for the table
         summary_data = []
@@ -270,7 +371,7 @@ if tab_selection == "📊 Dashboard":
                 "Close Date": format_date_display(close_date_str),
                 "Blocked Days": blocked_days,
                 "Age Indicator": age_color,
-                "Status": "🟢 Closed" if issue["status"] == "Closed" else "🟡 In Progress" if issue["status"] == "In Progress" else "🔴 Open"
+                "Status": "Closed" if issue["status"] == "Closed" else "In Progress" if issue["status"] == "In Progress" else "Open"
             })
         
         # Create summary DataFrame
@@ -280,8 +381,8 @@ if tab_selection == "📊 Dashboard":
         st.dataframe(
             summary_df,
             column_config={
-                "Age Indicator": st.column_config.TextColumn("Age", help="🟢 Recent (≤7 days), 🟡 Moderate (8-30 days), 🔴 Old (>30 days)"),
-                "Status": st.column_config.TextColumn("Status", help="🟢 Closed, 🟡 In Progress, 🔴 Open"),
+                "Age Indicator": st.column_config.TextColumn("Age", help="Recent (≤7 days), Moderate (8-30 days), Old (>30 days)"),
+                "Status": st.column_config.TextColumn("Status", help="Closed, In Progress, Open"),
                 "Blocked Days": st.column_config.NumberColumn("Days Blocked", help="Total days from start to close (or today if open)")
             },
             hide_index=True,
@@ -295,125 +396,388 @@ if tab_selection == "📊 Dashboard":
         total_blocked_days = sum([calculate_blocked_days(i.get("start_date", ""), i.get("close_date", "")) for i in node.get("issues", [])])
         
         col1, col2, col3, col4 = st.columns(4)
-        col1.metric("🔴 Open Issues", total_open)
-        col2.metric("🟡 In Progress", total_in_progress)
-        col3.metric("🟢 Closed", total_closed)
-        col4.metric("📅 Total Blocked Days", total_blocked_days)
+        col1.metric("Open Issues", total_open)
+        col2.metric("In Progress", total_in_progress)
+        col3.metric("Closed", total_closed)
+        col4.metric("Total Blocked Days", total_blocked_days)
 
 # Admin Tab
-elif tab_selection == "⚙️ Admin":
-    st.header("⚙️ Admin Panel")
+elif tab_selection == "Admin":
+    st.header("Admin Panel")
     st.info("Use this panel to edit pipeline data, contacts, and issues. Changes will be saved to the JSON file.")
     
     node = get_subsystem_node(data, selected_group, selected_subsystem)
     if node:
         st.subheader(f"Edit {selected_subsystem} Details")
 
-        st.subheader("Pipeline Counts")
-        for ptype in node.get("pipelines", {}):
-            st.markdown(f"**{ptype.title()} Pipelines:**")
-            cols = st.columns(len(STAGE_DISPLAY))
-            for idx, stag in enumerate(STAGE_DISPLAY):
-                val = node["pipelines"][ptype].get(stag, 0)
-                new_val = cols[idx].number_input(
-                    f"{ptype.title()} - {STAGE_DISPLAY[stag]}", min_value=0, max_value=1000,
-                    step=1, value=val, key=f"{selected_subsystem}-{ptype}-{stag}",
-                    on_change=mark_data_modified
-                )
-                if new_val != val:
-                    node["pipelines"][ptype][stag] = new_val
-                    mark_data_modified()
-
-        st.subheader("Contacts")
-        all_people = ["Alice", "Bob", "Charlie", "Diana", "Eve", "Frank", "Grace", "Hank", "Ivy", "Jai", "Kim", "Lena", "Mo", "Nia", "Omar"]
-        for ctype, label in [
-            ("producerTech", "Producer Tech"),
-            ("producerBusiness", "Producer Business"),
-            ("ourTech", "Our Tech"),
-            ("ourBusiness", "Our Business/PMO"),
-        ]:
-            new_contacts = st.multiselect(
-                label, all_people, default=node["contacts"].get(ctype, []), key=f"{selected_subsystem}-{ctype}",
-                on_change=mark_data_modified
-            )
-            if new_contacts != node["contacts"].get(ctype, []):
-                node["contacts"][ctype] = new_contacts
-                mark_data_modified()
-
-        st.subheader("Issues / Obstacles (Editable)")
-        issues = node.get("issues", [])
-        edited_issues = []
-        for i, issue in enumerate(issues):
-            exp = st.expander(f"Issue {i+1}: [{issue['id']}]")
-            with exp:
-                new_desc = st.text_input(f"Description", issue["description"], key=f"{selected_subsystem}-desc{i}", on_change=mark_data_modified)
-                new_status = st.selectbox("Status", ["Open", "In Progress", "Closed"], index=["Open", "In Progress", "Closed"].index(issue["status"]), key=f"{selected_subsystem}-status{i}", on_change=mark_data_modified)
+        # Pipeline Management Section
+        st.subheader("Pipeline Management")
+        
+        # Pipeline Type Selection
+        pipeline_type = st.selectbox("Select Pipeline Type", ["batch", "streaming"], key="pipeline_type_select")
+        
+        # Show existing pipelines
+        if "pipelineDetails" not in node:
+            node["pipelineDetails"] = {"streaming": [], "batch": []}
+        
+        existing_pipelines = node["pipelineDetails"].get(pipeline_type, [])
+        
+        # Display existing pipelines in a table with action columns
+        if existing_pipelines:
+            st.markdown(f"**Existing {pipeline_type.title()} Pipelines ({len(existing_pipelines)}):**")
+            
+            # Create table data with action columns
+            table_data = []
+            for idx, pipeline in enumerate(existing_pipelines):
+                if pipeline_type == "batch":
+                    table_data.append({
+                        "Pipeline Name": pipeline.get('pipeline_name', 'N/A'),
+                        "Data Name": pipeline.get('data_name', 'N/A'),
+                        "Frequency": pipeline.get('frequency', 'N/A'),
+                        "Run Day": pipeline.get('run_day', 'N/A'),
+                        "Run Time": pipeline.get('run_timestamp', 'N/A'),
+                        "File Size": f"{pipeline.get('file_size', 'N/A')} MB",
+                        "UAT Status": pipeline.get('uat_status', 'N/A'),
+                        "PROD Status": pipeline.get('prod_status', 'N/A'),
+                        "Edit": f"edit_{idx}_{pipeline_type}_{selected_subsystem}",
+                        "Delete": f"delete_{idx}_{pipeline_type}_{selected_subsystem}"
+                    })
+                else:  # streaming
+                    table_data.append({
+                        "Pipeline Name": pipeline.get('pipeline_name', 'N/A'),
+                        "Data Name": pipeline.get('data_name', 'N/A'),
+                        "Start Time": pipeline.get('start_time', 'N/A'),
+                        "End Time": pipeline.get('end_time', 'N/A'),
+                        "Run Day": pipeline.get('run_day', 'N/A'),
+                        "Volume": f"{pipeline.get('rough_volume', 'N/A')} MB",
+                        "UAT Status": pipeline.get('uat_status', 'N/A'),
+                        "PROD Status": pipeline.get('prod_status', 'N/A'),
+                        "Edit": f"edit_{idx}_{pipeline_type}_{selected_subsystem}",
+                        "Delete": f"delete_{idx}_{pipeline_type}_{selected_subsystem}"
+                    })
+            
+            # Create a custom table layout with action buttons in columns
+            st.markdown("**Pipeline Table:**")
+            
+            # Create header row
+            header_cols = st.columns([2, 2, 1, 1, 1, 1, 1, 1, 1, 1])
+            with header_cols[0]:
+                st.markdown("**Pipeline Name**")
+            with header_cols[1]:
+                st.markdown("**Data Name**")
+            with header_cols[2]:
+                st.markdown("**Frequency**")
+            with header_cols[3]:
+                st.markdown("**Run Day**")
+            with header_cols[4]:
+                st.markdown("**Run Time**")
+            with header_cols[5]:
+                st.markdown("**File Size**")
+            with header_cols[6]:
+                st.markdown("**UAT Status**")
+            with header_cols[7]:
+                st.markdown("**PROD Status**")
+            with header_cols[8]:
+                st.markdown("**Edit**")
+            with header_cols[9]:
+                st.markdown("**Delete**")
+            
+            # Create data rows with action buttons
+            for idx, pipeline in enumerate(existing_pipelines):
+                row_cols = st.columns([2, 2, 1, 1, 1, 1, 1, 1, 1, 1])
                 
-                # Date fields
+                if pipeline_type == "batch":
+                    with row_cols[0]:
+                        st.write(pipeline.get('pipeline_name', 'N/A'))
+                    with row_cols[1]:
+                        st.write(pipeline.get('data_name', 'N/A'))
+                    with row_cols[2]:
+                        st.write(pipeline.get('frequency', 'N/A'))
+                    with row_cols[3]:
+                        st.write(pipeline.get('run_day', 'N/A'))
+                    with row_cols[4]:
+                        st.write(pipeline.get('run_timestamp', 'N/A'))
+                    with row_cols[5]:
+                        st.write(f"{pipeline.get('file_size', 'N/A')} MB")
+                    with row_cols[6]:
+                        st.write(pipeline.get('uat_status', 'N/A'))
+                    with row_cols[7]:
+                        st.write(pipeline.get('prod_status', 'N/A'))
+                    with row_cols[8]:
+                        if st.button("✏️ Edit", key=f"edit_{idx}_{pipeline_type}_{selected_subsystem}", 
+                                   type="primary", help="Edit this pipeline"):
+                            st.session_state.edit_pipeline = {
+                                'index': idx,
+                                'type': pipeline_type,
+                                'data': pipeline
+                            }
+                            st.rerun()
+                    with row_cols[9]:
+                        if st.button("🗑️ Delete", key=f"delete_{idx}_{pipeline_type}_{selected_subsystem}", 
+                                   type="secondary", help="Delete this pipeline"):
+                            # Remove the pipeline
+                            node["pipelineDetails"][pipeline_type].pop(idx)
+                            update_pipeline_counts(data)
+                            # Save immediately so the deletion persists
+                            if save_data(data):
+                                st.success(f"Pipeline {pipeline.get('pipeline_name', 'Unknown')} deleted!")
+                            else:
+                                st.error("Failed to delete pipeline. Please try again.")
+                            st.rerun()
+                else:  # streaming
+                    with row_cols[0]:
+                        st.write(pipeline.get('pipeline_name', 'N/A'))
+                    with row_cols[1]:
+                        st.write(pipeline.get('data_name', 'N/A'))
+                    with row_cols[2]:
+                        st.write(pipeline.get('start_time', 'N/A'))
+                    with row_cols[3]:
+                        st.write(pipeline.get('end_time', 'N/A'))
+                    with row_cols[4]:
+                        st.write(pipeline.get('run_day', 'N/A'))
+                    with row_cols[5]:
+                        st.write(f"{pipeline.get('rough_volume', 'N/A')} MB")
+                    with row_cols[6]:
+                        st.write(pipeline.get('uat_status', 'N/A'))
+                    with row_cols[7]:
+                        st.write(pipeline.get('prod_status', 'N/A'))
+                    with row_cols[8]:
+                        if st.button("✏️ Edit", key=f"edit_{idx}_{pipeline_type}_{selected_subsystem}", 
+                                   type="primary", help="Edit this pipeline"):
+                            st.session_state.edit_pipeline = {
+                                'index': idx,
+                                'type': pipeline_type,
+                                'data': pipeline
+                            }
+                            st.rerun()
+                    with row_cols[9]:
+                        if st.button("🗑️ Delete", key=f"delete_{idx}_{pipeline_type}_{selected_subsystem}", 
+                                   type="secondary", help="Delete this pipeline"):
+                            # Remove the pipeline
+                            node["pipelineDetails"][pipeline_type].pop(idx)
+                            update_pipeline_counts(data)
+                            # Save immediately so the deletion persists
+                            if save_data(data):
+                                st.success(f"Pipeline {pipeline.get('pipeline_name', 'Unknown')} deleted!")
+                            else:
+                                st.error("Failed to delete pipeline. Please try again.")
+                            st.rerun()
+                
+                # Add separator between rows
+                st.markdown("---")
+        else:
+            st.info(f"No {pipeline_type.title()} pipelines found. Add your first pipeline below!")
+        
+        # Add New Pipeline Section
+        st.markdown("---")
+        st.subheader("Add New Pipeline")
+        
+        # Check if we're editing an existing pipeline
+        editing_pipeline = st.session_state.get('edit_pipeline', None)
+        is_editing = editing_pipeline and editing_pipeline['type'] == pipeline_type
+        
+        if is_editing:
+            st.info(f"Editing pipeline: {editing_pipeline['data'].get('pipeline_name', 'Unknown')}")
+            pipeline_data = editing_pipeline['data']
+        else:
+            pipeline_data = {}
+        
+        # Single Pipeline Addition
+        with st.expander("Add Single Pipeline", expanded=True):
+            if pipeline_type == "batch":
                 col1, col2 = st.columns(2)
                 with col1:
-                    start_date = st.date_input(
-                        "Start Date",
-                        value=datetime.strptime(issue.get("start_date", get_today_string()), "%Y-%m-%d").date() if issue.get("start_date") else date.today(),
-                        key=f"{selected_subsystem}-start{i}"
-                    )
+                    pipeline_name = st.text_input("Pipeline Name*", value=pipeline_data.get('pipeline_name', ''), 
+                                                help=BATCH_FIELDS["pipeline_name"], key="new_batch_name")
+                    data_name = st.text_input("Data Name*", value=pipeline_data.get('data_name', ''), 
+                                            help=BATCH_FIELDS["data_name"], key="new_batch_data")
+                    frequency = st.selectbox("Frequency*", ["daily", "weekly", "monthly"], 
+                                          index=["daily", "weekly", "monthly"].index(pipeline_data.get('frequency', 'daily')), 
+                                          help=BATCH_FIELDS["frequency"], key="new_batch_freq")
+                    run_day = st.text_input("Run Day*", value=pipeline_data.get('run_day', ''), 
+                                          placeholder="e.g., Monday, 1st", help=BATCH_FIELDS["run_day"], key="new_batch_day")
+                    run_timestamp = st.time_input("Run Timestamp*", 
+                                                value=datetime.strptime(pipeline_data.get('run_timestamp', '00:00'), '%H:%M').time() if pipeline_data.get('run_timestamp') else datetime.now().time(), 
+                                                help=BATCH_FIELDS["run_timestamp"], key="new_batch_time")
+                    file_size = st.number_input("File Size (MB)*", min_value=0.0, step=0.1, 
+                                              value=float(pipeline_data.get('file_size', 0.0)), 
+                                              help=BATCH_FIELDS["file_size"], key="new_batch_size")
+                
                 with col2:
-                    close_date = st.date_input(
-                        "Close Date",
-                        value=datetime.strptime(issue.get("close_date", get_today_string()), "%Y-%m-%d").date() if issue.get("close_date") else None,
-                        key=f"{selected_subsystem}-close{i}"
-                    )
+                    uat_date = st.date_input("UAT Date", 
+                                           value=datetime.strptime(pipeline_data.get('uat_date', '2025-01-01'), '%Y-%m-%d').date() if pipeline_data.get('uat_date') else datetime.now().date(), 
+                                           help=BATCH_FIELDS["uat_date"], key="new_batch_uat")
+                    prod_date = st.date_input("PROD Date", 
+                                            value=datetime.strptime(pipeline_data.get('prod_date', '2025-01-01'), '%Y-%m-%d').date() if pipeline_data.get('prod_date') else datetime.now().date(), 
+                                            help=BATCH_FIELDS["prod_date"], key="new_batch_prod")
+                    uat_status = st.selectbox("UAT Status*", ["planned", "in progress", "completed", "blocked"], 
+                                           index=["planned", "in progress", "completed", "blocked"].index(pipeline_data.get('uat_status', 'planned')), 
+                                           help=BATCH_FIELDS["uat_status"], key="new_batch_uat_status")
+                    prod_status = st.selectbox("PROD Status*", ["planned", "in progress", "completed", "blocked"], 
+                                            index=["planned", "in progress", "completed", "blocked"].index(pipeline_data.get('prod_status', 'planned')), 
+                                            help=BATCH_FIELDS["prod_status"], key="new_batch_prod_status")
+                    comment = st.text_area("Comment", value=pipeline_data.get('comment', ''), 
+                                         help=BATCH_FIELDS["comment"], key="new_batch_comment")
                 
-                # Auto-close date when status is "Closed"
-                if new_status == "Closed" and not close_date:
-                    close_date = date.today()
-                
-                # Validate date range
-                if not validate_date_range(start_date, close_date):
-                    st.error("⚠️ Close date cannot be before start date!")
-                    continue
-                
-                edited_issues.append({
-                    "id": issue["id"], 
-                    "description": new_desc, 
-                    "status": new_status,
-                    "start_date": start_date.strftime("%Y-%m-%d"),
-                    "close_date": close_date.strftime("%Y-%m-%d") if close_date else None
-                })
-        
-        # Check if issues were modified
-        if edited_issues != node.get("issues", []):
-            node["issues"] = edited_issues
-            mark_data_modified()
-
-        if st.button("Add New Issue"):
-            node["issues"].append({
-                "id": f"ISS-{100+len(node['issues'])}", 
-                "description": "", 
-                "status": "Open",
-                "start_date": get_today_string(),
-                "close_date": None
-            })
-            mark_data_modified()
-
-        # Save and Download buttons
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            # Show save status
-            if st.session_state.data_modified:
-                st.warning("⚠️ You have unsaved changes!")
-            
-            if st.button("💾 Save Changes", type="primary", disabled=not st.session_state.data_modified):
-                if save_data(data):
-                    st.success("✅ Changes saved successfully! Data will persist after server restart.")
+                if is_editing:
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        if st.button("Update Pipeline", key=f"update_batch_{selected_subsystem}", type="primary"):
+                            if pipeline_name and data_name and frequency and run_day and file_size:
+                                # Update existing pipeline
+                                node["pipelineDetails"][pipeline_type][editing_pipeline['index']] = {
+                                    "pipeline_name": pipeline_name,
+                                    "data_name": data_name,
+                                    "frequency": frequency,
+                                    "run_day": run_day,
+                                    "run_timestamp": run_timestamp.strftime("%H:%M"),
+                                    "file_size": str(file_size),
+                                    "uat_date": uat_date.strftime("%Y-%m-%d") if uat_date else "",
+                                    "prod_date": prod_date.strftime("%Y-%m-%d") if prod_date else "",
+                                    "uat_status": uat_status,
+                                    "prod_status": prod_status,
+                                    "comment": comment
+                                }
+                                update_pipeline_counts(data)
+                                # Clear edit mode
+                                if 'edit_pipeline' in st.session_state:
+                                    del st.session_state.edit_pipeline
+                                # Save immediately so the update persists
+                                if save_data(data):
+                                    st.success(f"Pipeline updated!")
+                                else:
+                                    st.error("Failed to update pipeline. Please try again.")
+                                st.rerun()
+                            else:
+                                st.error("Please fill in all required fields (marked with *)")
+                    
+                    with col2:
+                        if st.button("Cancel Edit", key=f"cancel_batch_{selected_subsystem}", type="secondary"):
+                            if 'edit_pipeline' in st.session_state:
+                                del st.session_state.edit_pipeline
+                            st.rerun()
                 else:
-                    st.error("❌ Failed to save changes. Please try again.")
-        
-        with col2:
-            st.download_button(
-                label="📥 Download JSON",
-                file_name="data_edited.json",
-                mime="application/json",
-                data=json.dumps(data, indent=2),
-            )
+                    if st.button("Add Batch Pipeline", key=f"add_batch_{selected_subsystem}", type="primary"):
+                        if pipeline_name and data_name and frequency and run_day and file_size:
+                            new_pipeline = {
+                                "pipeline_name": pipeline_name,
+                                "data_name": data_name,
+                                "frequency": frequency,
+                                "run_day": run_day,
+                                "run_timestamp": run_timestamp.strftime("%H:%M"),
+                                "file_size": str(file_size),
+                                "uat_date": uat_date.strftime("%Y-%m-%d") if uat_date else "",
+                                "prod_date": prod_date.strftime("%Y-%m-%d") if prod_date else "",
+                                "uat_status": uat_status,
+                                "prod_status": prod_status,
+                                "comment": comment
+                            }
+                            node["pipelineDetails"][pipeline_type].append(new_pipeline)
+                            update_pipeline_counts(data)
+                            # Save immediately so the pipeline persists after rerun
+                            if save_data(data):
+                                st.success(f"Added new {pipeline_type} pipeline: {pipeline_name}")
+                            else:
+                                st.error("Failed to save pipeline. Please try again.")
+                            st.rerun()
+                        else:
+                            st.error("Please fill in all required fields (marked with *)")
+            
+            else:  # streaming
+                col1, col2 = st.columns(2)
+                with col1:
+                    pipeline_name = st.text_input("Pipeline Name*", value=pipeline_data.get('pipeline_name', ''), 
+                                                help=STREAMING_FIELDS["pipeline_name"], key="new_stream_name")
+                    data_name = st.text_input("Data Name*", value=pipeline_data.get('data_name', ''), 
+                                            help=STREAMING_FIELDS["data_name"], key="new_stream_data")
+                    start_time = st.time_input("Start Time*", 
+                                             value=datetime.strptime(pipeline_data.get('start_time', '00:00'), '%H:%M').time() if pipeline_data.get('start_time') else datetime.now().time(), 
+                                             help=STREAMING_FIELDS["start_time"], key="new_stream_start")
+                    end_time = st.time_input("End Time*", 
+                                           value=datetime.strptime(pipeline_data.get('end_time', '23:59'), '%H:%M').time() if pipeline_data.get('end_time') else datetime.now().time(), 
+                                           help=STREAMING_FIELDS["end_time"], key="new_stream_end")
+                    run_day = st.text_input("Run Day*", value=pipeline_data.get('run_day', ''), 
+                                          placeholder="e.g., Monday, 1st", help=STREAMING_FIELDS["run_day"], key="new_stream_day")
+                    rough_volume = st.number_input("Volume (MB)*", min_value=0.0, step=0.1, 
+                                                 value=float(pipeline_data.get('rough_volume', 0.0)), 
+                                                 help=STREAMING_FIELDS["rough_volume"], key="new_stream_volume")
+                
+                with col2:
+                    uat_date = st.date_input("UAT Date", 
+                                           value=datetime.strptime(pipeline_data.get('uat_date', '2025-01-01'), '%Y-%m-%d').date() if pipeline_data.get('uat_date') else datetime.now().date(), 
+                                           help=STREAMING_FIELDS["uat_date"], key="new_stream_uat")
+                    prod_date = st.date_input("PROD Date", 
+                                            value=datetime.strptime(pipeline_data.get('prod_date', '2025-01-01'), '%Y-%m-%d').date() if pipeline_data.get('prod_date') else datetime.now().date(), 
+                                            help=STREAMING_FIELDS["prod_date"], key="new_stream_prod")
+                    uat_status = st.selectbox("UAT Status*", ["planned", "in progress", "completed", "blocked"], 
+                                           index=["planned", "in progress", "completed", "blocked"].index(pipeline_data.get('uat_status', 'planned')), 
+                                           help=STREAMING_FIELDS["uat_status"], key="new_stream_uat_status")
+                    prod_status = st.selectbox("PROD Status*", ["planned", "in progress", "completed", "blocked"], 
+                                            index=["planned", "in progress", "completed", "blocked"].index(pipeline_data.get('prod_status', 'planned')), 
+                                            help=STREAMING_FIELDS["prod_status"], key="new_stream_prod_status")
+                    comment = st.text_area("Comment", value=pipeline_data.get('comment', ''), 
+                                         help=STREAMING_FIELDS["comment"], key="new_stream_comment")
+                
+                if is_editing:
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        if st.button("Update Pipeline", key=f"update_stream_{selected_subsystem}", type="primary"):
+                            if pipeline_name and data_name and start_time and end_time and run_day and rough_volume:
+                                # Update existing pipeline
+                                node["pipelineDetails"][pipeline_type][editing_pipeline['index']] = {
+                                    "pipeline_name": pipeline_name,
+                                    "data_name": data_name,
+                                    "start_time": start_time.strftime("%H:%M"),
+                                    "end_time": end_time.strftime("%H:%M"),
+                                    "run_day": run_day,
+                                    "rough_volume": str(rough_volume),
+                                    "uat_date": uat_date.strftime("%Y-%m-%d") if uat_date else "",
+                                    "prod_date": prod_date.strftime("%Y-%m-%d") if prod_date else "",
+                                    "uat_status": uat_status,
+                                    "prod_status": prod_status,
+                                    "comment": comment
+                                }
+                                update_pipeline_counts(data)
+                                # Clear edit mode
+                                if 'edit_pipeline' in st.session_state:
+                                    del st.session_state.edit_pipeline
+                                # Save immediately so the update persists
+                                if save_data(data):
+                                    st.success(f"Pipeline updated!")
+                                else:
+                                    st.error("Failed to update pipeline. Please try again.")
+                                st.rerun()
+                            else:
+                                st.error("Please fill in all required fields (marked with *)")
+                    
+                    with col2:
+                        if st.button("Cancel Edit", key=f"cancel_stream_{selected_subsystem}", type="secondary"):
+                            if 'edit_pipeline' in st.session_state:
+                                del st.session_state.edit_pipeline
+                            st.rerun()
+                else:
+                    if st.button("Add Streaming Pipeline", key=f"add_stream_{selected_subsystem}", type="primary"):
+                        if pipeline_name and data_name and start_time and end_time and run_day and rough_volume:
+                            new_pipeline = {
+                                "pipeline_name": pipeline_name,
+                                "data_name": data_name,
+                                "start_time": start_time.strftime("%H:%M"),
+                                "end_time": end_time.strftime("%H:%M"),
+                                "run_day": run_day,
+                                "rough_volume": str(rough_volume),
+                                "uat_date": uat_date.strftime("%Y-%m-%d") if uat_date else "",
+                                "prod_date": prod_date.strftime("%Y-%m-%d") if prod_date else "",
+                                "uat_status": uat_status,
+                                "prod_status": prod_status,
+                                "comment": comment
+                            }
+                            node["pipelineDetails"][pipeline_type].append(new_pipeline)
+                            update_pipeline_counts(data)
+                            # Save immediately so the pipeline persists after rerun
+                            if save_data(data):
+                                st.success(f"Added new {pipeline_type} pipeline: {pipeline_name}")
+                            else:
+                                st.error("Failed to save pipeline. Please try again.")
+                            st.rerun()
+                        else:
+                            st.error("Please fill in all required fields (marked with *)")

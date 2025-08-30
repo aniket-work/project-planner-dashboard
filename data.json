@@ -7,16 +7,16 @@
           "name": "SubsystemX",
           "pipelines": {
             "streaming": {
-              "finalized": 12,
-              "uat": 5,
-              "planned": 3,
-              "production": 2
+              "finalized": 0,
+              "uat": 0,
+              "planned": 0,
+              "production": 0
             },
             "batch": {
-              "finalized": 20,
-              "uat": 7,
-              "planned": 4,
-              "production": 9
+              "finalized": 0,
+              "uat": 2,
+              "planned": 1,
+              "production": 0
             }
           },
           "contacts": {
@@ -49,22 +49,66 @@
               "start_date": "2025-08-25",
               "close_date": null
             }
-          ]
+          ],
+          "pipelineDetails": {
+            "streaming": [],
+            "batch": [
+              {
+                "pipeline_name": "batch_pipeline_1",
+                "data_name": "batch_pipeline_1",
+                "frequency": "daily",
+                "run_day": "Mon",
+                "run_timestamp": "00:42",
+                "file_size": "55.0",
+                "uat_date": "2025-08-30",
+                "prod_date": "2025-08-30",
+                "uat_status": "in progress",
+                "prod_status": "planned",
+                "comment": ""
+              },
+              {
+                "pipeline_name": "batch_pipeline_2",
+                "data_name": "batch_pipeline_2",
+                "frequency": "daily",
+                "run_day": "Mon",
+                "run_timestamp": "00:42",
+                "file_size": "100.003",
+                "uat_date": "2025-08-30",
+                "prod_date": "2025-08-30",
+                "uat_status": "in progress",
+                "prod_status": "completed",
+                "comment": ""
+              },
+              {
+                "pipeline_name": "batch_pipeline_3",
+                "data_name": "batch_pipeline_3",
+                "frequency": "daily",
+                "run_day": "Wed",
+                "run_timestamp": "00:43",
+                "file_size": "67.0",
+                "uat_date": "2025-08-30",
+                "prod_date": "2025-08-30",
+                "uat_status": "planned",
+                "prod_status": "completed",
+                "comment": ""
+              }
+            ]
+          }
         },
         {
           "name": "SubsystemY",
           "pipelines": {
             "streaming": {
-              "finalized": 8,
-              "uat": 2,
-              "planned": 1,
-              "production": 1
+              "finalized": 0,
+              "uat": 0,
+              "planned": 0,
+              "production": 0
             },
             "batch": {
-              "finalized": 8,
-              "uat": 3,
-              "planned": 2,
-              "production": 2
+              "finalized": 0,
+              "uat": 0,
+              "planned": 0,
+              "production": 0
             }
           },
           "contacts": {
@@ -81,22 +125,26 @@
               "Ivy"
             ]
           },
-          "issues": []
+          "issues": [],
+          "pipelineDetails": {
+            "streaming": [],
+            "batch": []
+          }
         },
         {
           "name": "SubsystemZ",
           "pipelines": {
             "streaming": {
-              "finalized": 2,
-              "uat": 1,
-              "planned": 6,
+              "finalized": 0,
+              "uat": 0,
+              "planned": 0,
               "production": 0
             },
             "batch": {
-              "finalized": 3,
-              "uat": 4,
-              "planned": 5,
-              "production": 1
+              "finalized": 0,
+              "uat": 1,
+              "planned": 0,
+              "production": 0
             }
           },
           "contacts": {
@@ -123,7 +171,25 @@
               "start_date": "2024-01-25",
               "close_date": null
             }
-          ]
+          ],
+          "pipelineDetails": {
+            "streaming": [],
+            "batch": [
+              {
+                "pipeline_name": "uat_batch",
+                "data_name": "uat_batch",
+                "frequency": "daily",
+                "run_day": "Tues",
+                "run_timestamp": "18:59",
+                "file_size": "879.0",
+                "uat_date": "2025-08-29",
+                "prod_date": "2025-08-29",
+                "uat_status": "in progress",
+                "prod_status": "planned",
+                "comment": ""
+              }
+            ]
+          }
         }
       ]
     }
