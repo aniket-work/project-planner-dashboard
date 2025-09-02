@@ -155,7 +155,7 @@
                 "uat_date": "2025-08-30",
                 "prod_date": "2025-08-30",
                 "status": "Blocked",
-                "comment": ""
+                "comment": "This is my test comment"
               },
               {
                 "pipeline_name": "batch_test_5",

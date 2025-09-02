@@ -77,6 +77,12 @@ STAGE_DISPLAY = {
     "production": "Production",
 }
 
+# Consistent color mapping for pipeline types
+PIPELINE_COLORS = {
+    "batch": "#1f77b4",      # Dark blue
+    "streaming": "#87ceeb"   # Light blue
+}
+
 # Pipeline field definitions with tooltips
 BATCH_FIELDS = {
     "pipeline_name": "Actual name of pipeline",
@@ -330,7 +336,8 @@ if tab_selection == "Dashboard":
 
     # Charts
     colA, colB = st.columns(2)
-    fig1 = px.pie(sub_df, values="Count", names="PipelineType", title="Streaming vs Batch")
+    fig1 = px.pie(sub_df, values="Count", names="PipelineType", title="Streaming vs Batch",
+                  color_discrete_map=PIPELINE_COLORS)
     colA.plotly_chart(fig1, use_container_width=True)
     fig2 = px.bar(
         sub_df,
@@ -339,6 +346,7 @@ if tab_selection == "Dashboard":
         color="PipelineType",
         barmode="stack",
         title="Pipelines by Stage (Stacked)",
+        color_discrete_map=PIPELINE_COLORS
     )
     colB.plotly_chart(fig2, use_container_width=True)
 
@@ -404,7 +412,7 @@ if tab_selection == "Dashboard":
 # Admin Tab
 elif tab_selection == "Admin":
     st.header("Admin Panel")
-    st.info("Use this panel to edit pipeline data, contacts, and issues. Changes will be saved to the JSON file.")
+    st.info("Use this panel to edit pipeline data, contacts, and issues.")
     
     node = get_subsystem_node(data, selected_group, selected_subsystem)
     if node:
