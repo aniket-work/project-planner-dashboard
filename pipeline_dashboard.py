@@ -282,7 +282,7 @@ def process_excel_upload(df: pd.DataFrame, pipeline_type: str) -> list:
     return pipelines
 
 # -------- Streamlit UI --------
-st.set_page_config(page_title="Pipeline Onboarding Dashboard", layout="wide")
+st.set_page_config(page_title="Pipeline Onboarding Dashboard", layout="wide", initial_sidebar_state="collapsed")
 st.title("Pipeline Onboarding Dashboard")
 
 # Load data and show status
@@ -434,137 +434,75 @@ elif tab_selection == "Admin":
         if existing_pipelines:
             st.markdown(f"**Existing {pipeline_type.title()} Pipelines ({len(existing_pipelines)}):**")
             
-            # Create table data with action columns
+            # Create table data for display
             table_data = []
             for idx, pipeline in enumerate(existing_pipelines):
                 if pipeline_type == "batch":
                     table_data.append({
+                        "ID": idx,
                         "Pipeline Name": pipeline.get('pipeline_name', 'N/A'),
                         "Data Name": pipeline.get('data_name', 'N/A'),
                         "Frequency": pipeline.get('frequency', 'N/A'),
                         "Run Day": pipeline.get('run_day', 'N/A'),
                         "Run Time": pipeline.get('run_timestamp', 'N/A'),
-                        "File Size": f"{pipeline.get('file_size', 'N/A')} MB",
+                        "File Size (MB)": pipeline.get('file_size', 'N/A'),
                         "Status": pipeline.get('status', 'N/A'),
-                        "Edit": f"edit_{idx}_{pipeline_type}_{selected_subsystem}",
-                        "Delete": f"delete_{idx}_{pipeline_type}_{selected_subsystem}"
+                        "UAT Date": pipeline.get('uat_date', 'N/A'),
+                        "PROD Date": pipeline.get('prod_date', 'N/A')
                     })
                 else:  # streaming
                     table_data.append({
+                        "ID": idx,
                         "Pipeline Name": pipeline.get('pipeline_name', 'N/A'),
                         "Data Name": pipeline.get('data_name', 'N/A'),
                         "Start Time": pipeline.get('start_time', 'N/A'),
                         "End Time": pipeline.get('end_time', 'N/A'),
                         "Run Day": pipeline.get('run_day', 'N/A'),
-                        "Volume": f"{pipeline.get('rough_volume', 'N/A')} MB",
+                        "Volume (MB)": pipeline.get('rough_volume', 'N/A'),
                         "Status": pipeline.get('status', 'N/A'),
-                        "Edit": f"edit_{idx}_{pipeline_type}_{selected_subsystem}",
-                        "Delete": f"delete_{idx}_{pipeline_type}_{selected_subsystem}"
+                        "UAT Date": pipeline.get('uat_date', 'N/A'),
+                        "PROD Date": pipeline.get('prod_date', 'N/A')
                     })
             
-            # Create a custom table layout with action buttons in columns
-            st.markdown("**Pipeline Table:**")
+            # Display table with built-in sorting and searching
+            table_df = pd.DataFrame(table_data)
             
-            # Create header row
-            header_cols = st.columns([2, 2, 1, 1, 1, 1, 1, 1, 1])
-            with header_cols[0]:
-                st.markdown("**Pipeline Name**")
-            with header_cols[1]:
-                st.markdown("**Data Name**")
-            with header_cols[2]:
-                st.markdown("**Frequency**")
-            with header_cols[3]:
-                st.markdown("**Run Day**")
-            with header_cols[4]:
-                st.markdown("**Run Time**")
-            with header_cols[5]:
-                st.markdown("**File Size**")
-            with header_cols[6]:
-                st.markdown("**Status**")
-            with header_cols[7]:
-                st.markdown("**Edit**")
-            with header_cols[8]:
-                st.markdown("**Delete**")
+            # Use st.dataframe with enhanced features
+            event = st.dataframe(
+                table_df,
+                use_container_width=True,
+                hide_index=True,
+                on_select="rerun",
+                selection_mode="single-row"
+            )
             
-            # Create data rows with action buttons
-            for idx, pipeline in enumerate(existing_pipelines):
-                row_cols = st.columns([2, 2, 1, 1, 1, 1, 1, 1, 1])
+            # Action buttons for selected row
+            if event.selection.rows:
+                selected_idx = event.selection.rows[0]
+                selected_pipeline = existing_pipelines[selected_idx]
                 
-                if pipeline_type == "batch":
-                    with row_cols[0]:
-                        st.write(pipeline.get('pipeline_name', 'N/A'))
-                    with row_cols[1]:
-                        st.write(pipeline.get('data_name', 'N/A'))
-                    with row_cols[2]:
-                        st.write(pipeline.get('frequency', 'N/A'))
-                    with row_cols[3]:
-                        st.write(pipeline.get('run_day', 'N/A'))
-                    with row_cols[4]:
-                        st.write(pipeline.get('run_timestamp', 'N/A'))
-                    with row_cols[5]:
-                        st.write(f"{pipeline.get('file_size', 'N/A')} MB")
-                    with row_cols[6]:
-                        st.write(pipeline.get('status', 'N/A'))
-                    with row_cols[7]:
-                        if st.button("✏️ Edit", key=f"edit_{idx}_{pipeline_type}_{selected_subsystem}", 
-                                   type="primary", help="Edit this pipeline"):
-                            st.session_state.edit_pipeline = {
-                                'index': idx,
-                                'type': pipeline_type,
-                                'data': pipeline
-                            }
-                            st.rerun()
-                    with row_cols[8]:
-                        if st.button("🗑️ Delete", key=f"delete_{idx}_{pipeline_type}_{selected_subsystem}", 
-                                   type="secondary", help="Delete this pipeline"):
-                            # Remove the pipeline
-                            node["pipelineDetails"][pipeline_type].pop(idx)
-                            update_pipeline_counts(data)
-                            # Save immediately so the deletion persists
-                            if save_data(data):
-                                st.success(f"Pipeline {pipeline.get('pipeline_name', 'Unknown')} deleted!")
-                            else:
-                                st.error("Failed to delete pipeline. Please try again.")
-                            st.rerun()
-                else:  # streaming
-                    with row_cols[0]:
-                        st.write(pipeline.get('pipeline_name', 'N/A'))
-                    with row_cols[1]:
-                        st.write(pipeline.get('data_name', 'N/A'))
-                    with row_cols[2]:
-                        st.write(pipeline.get('start_time', 'N/A'))
-                    with row_cols[3]:
-                        st.write(pipeline.get('end_time', 'N/A'))
-                    with row_cols[4]:
-                        st.write(pipeline.get('run_day', 'N/A'))
-                    with row_cols[5]:
-                        st.write(f"{pipeline.get('rough_volume', 'N/A')} MB")
-                    with row_cols[6]:
-                        st.write(pipeline.get('status', 'N/A'))
-                    with row_cols[7]:
-                        if st.button("✏️ Edit", key=f"edit_{idx}_{pipeline_type}_{selected_subsystem}", 
-                                   type="primary", help="Edit this pipeline"):
-                            st.session_state.edit_pipeline = {
-                                'index': idx,
-                                'type': pipeline_type,
-                                'data': pipeline
-                            }
-                            st.rerun()
-                    with row_cols[8]:
-                        if st.button("🗑️ Delete", key=f"delete_{idx}_{pipeline_type}_{selected_subsystem}", 
-                                   type="secondary", help="Delete this pipeline"):
-                            # Remove the pipeline
-                            node["pipelineDetails"][pipeline_type].pop(idx)
-                            update_pipeline_counts(data)
-                            # Save immediately so the deletion persists
-                            if save_data(data):
-                                st.success(f"Pipeline {pipeline.get('pipeline_name', 'Unknown')} deleted!")
-                            else:
-                                st.error("Failed to delete pipeline. Please try again.")
-                            st.rerun()
+                col1, col2, col3 = st.columns([1, 1, 6])
                 
-                # Add separator between rows
-                st.markdown("---")
+                with col1:
+                    if st.button("✏️ Edit Selected", type="primary", key=f"edit_selected_{pipeline_type}_{selected_subsystem}"):
+                        st.session_state.edit_pipeline = {
+                            'index': selected_idx,
+                            'type': pipeline_type,
+                            'data': selected_pipeline
+                        }
+                        st.rerun()
+                
+                with col2:
+                    if st.button("🗑️ Delete Selected", type="secondary", key=f"delete_selected_{pipeline_type}_{selected_subsystem}"):
+                        # Remove the pipeline
+                        node["pipelineDetails"][pipeline_type].pop(selected_idx)
+                        update_pipeline_counts(data)
+                        # Save immediately so the deletion persists
+                        if save_data(data):
+                            st.success(f"Pipeline {selected_pipeline.get('pipeline_name', 'Unknown')} deleted!")
+                        else:
+                            st.error("Failed to delete pipeline. Please try again.")
+                        st.rerun()
         else:
             st.info(f"No {pipeline_type.title()} pipelines found. Add your first pipeline below!")
         
@@ -782,62 +720,62 @@ elif tab_selection == "Admin":
         if existing_issues:
             st.markdown(f"**Existing Issues ({len(existing_issues)}):**")
             
-            # Create issues table with action columns
-            st.markdown("**Issues Table:**")
-            
-            # Create header row for issues
-            issue_header_cols = st.columns([1, 3, 1, 1, 1, 1, 1])
-            with issue_header_cols[0]:
-                st.markdown("**Issue ID**")
-            with issue_header_cols[1]:
-                st.markdown("**Description**")
-            with issue_header_cols[2]:
-                st.markdown("**Status**")
-            with issue_header_cols[3]:
-                st.markdown("**Start Date**")
-            with issue_header_cols[4]:
-                st.markdown("**Close Date**")
-            with issue_header_cols[5]:
-                st.markdown("**Edit**")
-            with issue_header_cols[6]:
-                st.markdown("**Delete**")
-            
-            # Create data rows for issues with action buttons
+            # Create issues table data for display
+            issues_table_data = []
             for idx, issue in enumerate(existing_issues):
-                issue_row_cols = st.columns([1, 3, 1, 1, 1, 1, 1])
+                blocked_days = calculate_blocked_days(issue.get('start_date', ''), issue.get('close_date', ''))
+                issues_table_data.append({
+                    "ID": idx,
+                    "Issue ID": issue.get('id', 'N/A'),
+                    "Description": issue.get('description', 'N/A'),
+                    "Status": issue.get('status', 'N/A'),
+                    "Start Date": format_date_display(issue.get('start_date', '')),
+                    "Close Date": format_date_display(issue.get('close_date', '')),
+                    "Blocked Days": blocked_days,
+                    "Age Indicator": get_issue_age_color(blocked_days)
+                })
+            
+            # Display issues table with built-in sorting and searching
+            issues_df = pd.DataFrame(issues_table_data)
+            
+            # Use st.dataframe with enhanced features
+            issues_event = st.dataframe(
+                issues_df,
+                use_container_width=True,
+                hide_index=True,
+                on_select="rerun",
+                selection_mode="single-row",
+                column_config={
+                    "Age Indicator": st.column_config.TextColumn("Age", help="Recent (≤7 days), Moderate (8-30 days), Old (>30 days)"),
+                    "Blocked Days": st.column_config.NumberColumn("Days Blocked", help="Total days from start to close (or today if open)")
+                }
+            )
+            
+            # Action buttons for selected issue
+            if issues_event.selection.rows:
+                selected_issue_idx = issues_event.selection.rows[0]
+                selected_issue = existing_issues[selected_issue_idx]
                 
-                with issue_row_cols[0]:
-                    st.write(issue.get('id', 'N/A'))
-                with issue_row_cols[1]:
-                    st.write(issue.get('description', 'N/A'))
-                with issue_row_cols[2]:
-                    st.write(issue.get('status', 'N/A'))
-                with issue_row_cols[3]:
-                    st.write(format_date_display(issue.get('start_date', '')))
-                with issue_row_cols[4]:
-                    st.write(format_date_display(issue.get('close_date', '')))
-                with issue_row_cols[5]:
-                    if st.button("✏️ Edit", key=f"edit_issue_{idx}_{selected_subsystem}", 
-                               type="primary", help="Edit this issue"):
+                col1, col2, col3 = st.columns([1, 1, 6])
+                
+                with col1:
+                    if st.button("✏️ Edit Selected Issue", type="primary", key=f"edit_selected_issue_{selected_subsystem}"):
                         st.session_state.edit_issue = {
-                            'index': idx,
-                            'data': issue
+                            'index': selected_issue_idx,
+                            'data': selected_issue
                         }
                         st.rerun()
-                with issue_row_cols[6]:
-                    if st.button("🗑️ Delete", key=f"delete_issue_{idx}_{selected_subsystem}", 
-                               type="secondary", help="Delete this issue"):
+                
+                with col2:
+                    if st.button("🗑️ Delete Selected Issue", type="secondary", key=f"delete_selected_issue_{selected_subsystem}"):
                         # Remove the issue
-                        node["issues"].pop(idx)
+                        node["issues"].pop(selected_issue_idx)
                         # Save immediately so the deletion persists
                         if save_data(data):
-                            st.success(f"Issue {issue.get('id', 'Unknown')} deleted!")
+                            st.success(f"Issue {selected_issue.get('id', 'Unknown')} deleted!")
                         else:
                             st.error("Failed to delete issue. Please try again.")
                         st.rerun()
-                
-                # Add separator between rows
-                st.markdown("---")
         else:
             st.info("No issues found. Add your first issue below!")
         
